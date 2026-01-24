@@ -1,87 +1,74 @@
 const express=require("express")
-const fs=require("fs")
 const cors=require("cors")
+const connectDB = require("./config/db")
+const { UserModel } = require("./models/user")
+
+
 const app=express()
 
 app.use(express.json())
 app.use(cors())
 
-// data
 
-const users=["sundari","sheela","leela"]
+//! connect to DB
+connectDB()
 
+// apis
 
-//! create the rest api
-
-
-//! testing api
-app.get("/",(req,res)=>{
-    res.json({message:"welcome to express js "})
+app.get("/test",(req,res)=>{
+    res.status(200).json({message:"API status is healthy"})
 })
+
 
 //! fetch all users
-app.get("/allusers",(req,res)=>{
-   try {
-     // read the data from the file
-    const data=JSON.parse(fs.readFileSync("./data.json","utf-8"))
-    res.json({message:"reading the data",data})
-   } catch (error) {
-    res.json({message:"Internal server error. Please try again"})
-   }
+
+app.get("/allusers",async(req,res)=>{
+        try {
+           const allusers= await UserModel.find()
+           res.status(200).json({message:"Data fetched",data:allusers})
+            
+        } catch (error) {
+            res.status(500).json({message:"Internal server error. please try again"})
+        }
 })
 
-//! create a user
-app.post("/register",(req,res)=>{
+
+//! register
+app.post("/register",async (req,res) => {
     try {
-    const userdata=req.body
-    const Alldata=JSON.parse(fs.readFileSync("./data.json","utf-8"))
-    const updateData=[...Alldata,userdata]
-    fs.writeFileSync("./data.json",JSON.stringify(updateData,null,2))
-    res.json({message:"user created successfully"})
+        const {username,age,email,password,gender,education}=req.body
+        if(!username || !age || !email || !password || ! gender || !education){
+            res.status(404).json({message:"All fields are required"})
+        }
+
+        const result=await UserModel.insertOne({username,age,email,password,gender,education})
+        console.log(result)
+        res.status(201).json({message:"Register successfully",result})
     } catch (error) {
-       res.json({message:"Internal server error. Please try again"}) 
+         res.status(500).json({message:"Internal server error. please try again"})
     }
 })
 
-//! update user
 
-app.put("/updateuser/:userId",(req,res)=>{
+//! login
+
+app.post("/login",async (req,res) => {
     try {
-        const newData=req.body
-    const {userId}=req.params
-    const Alldata=JSON.parse(fs.readFileSync("./data.json","utf-8"))
-    const filterData=Alldata.filter((user)=>user.id!=userId)
-    const newUserData={
-        id:userId,
-        ...newData
-    }
-    const finalData=[...filterData,newUserData]
-     fs.writeFileSync("./data.json",JSON.stringify(finalData,null,2))
-     res.json({message:"user updated successfully"})
+        const {email,password}=req.body
+        const user=await UserModel.findOne({email})
+        console.log(user)
+        if(!user){
+            res.status(404).json({message:"Email not found"})
+        }
+        if(user.password!==password){
+            res.status(401).json({message:"Incorrect password"})
+        }
+        res.status(200).json({message:"Login successfully"})
     } catch (error) {
-       res.json({message:"Internal server error. Please try again"}) 
+        res.status(500).json({message:"Internal server error. please try again"})
     }
-})
-
-
-
-
-
-
-
-
-//! delete user
-
-app.delete("/deleteuser/:userId",(req,res)=>{
-    const {userId}=req.params
-    console.log(typeof userId)
-    const Alldata=JSON.parse(fs.readFileSync("./data.json","utf-8"))
-    const filterData=Alldata.filter((user)=>user.id!=userId)
-    console.log(filterData)
-    fs.writeFileSync("./data.json",JSON.stringify(filterData,null,2))
-    res.json({message:"user deleted successfully"})
 })
 
 app.listen(8080,()=>{
-    console.log(`http://localhost:8080  in this url my server is running`)
+    console.log("server started")
 })
