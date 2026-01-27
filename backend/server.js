@@ -1,3 +1,4 @@
+require("dotenv").config()
 const express=require("express")
 const cors=require("cors")
 const connectDB = require("./config/db")
@@ -69,6 +70,7 @@ app.post("/login",async (req,res) => {
     }
 })
 
-app.listen(8080,()=>{
-    console.log("server started")
+
+app.listen(process.env.PORT,()=>{
+    console.log(`http:localhost:${process.env.PORT}`)
 })
