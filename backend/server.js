@@ -1,6 +1,7 @@
 require("dotenv").config()
 const express=require("express")
 const cors=require("cors")
+const bcrypt=require("bcrypt")
 const connectDB = require("./config/db")
 const { UserModel } = require("./models/user")
 
@@ -13,6 +14,10 @@ app.use(cors())
 
 //! connect to DB
 connectDB()
+
+
+
+
 
 // apis
 
@@ -42,7 +47,9 @@ app.post("/register",async (req,res) => {
             res.status(404).json({message:"All fields are required"})
         }
 
-        const result=await UserModel.insertOne({username,age,email,password,gender,education})
+        const hashedPassword=await bcrypt.hash(password,10)
+        console.log(hashedPassword)
+        const result=await UserModel.insertOne({username,age,email,password:hashedPassword,gender,education})
         console.log(result)
         res.status(201).json({message:"Register successfully",result})
     } catch (error) {
@@ -53,7 +60,7 @@ app.post("/register",async (req,res) => {
 
 //! login
 
-app.post("/login",async (req,res) => {
+app.post("/login",async(req,res) => {
     try {
         const {email,password}=req.body
         const user=await UserModel.findOne({email})
@@ -61,7 +68,8 @@ app.post("/login",async (req,res) => {
         if(!user){
             res.status(404).json({message:"Email not found"})
         }
-        if(user.password!==password){
+        const match= await bcrypt.compare   (password,user.password)
+        if(!match){
             res.status(401).json({message:"Incorrect password"})
         }
         res.status(200).json({message:"Login successfully"})
@@ -70,6 +78,25 @@ app.post("/login",async (req,res) => {
     }
 })
 
+//! forget the password
+app.post("/forgotpassword",async (req,res) => {
+    try {
+        const {email,password}=req.body
+        const user=await UserModel.findOne({email})
+        console.log(user)
+        if(!user){
+            res.status(404).json({message:"Email not found"})
+        }
+         const hashedPassword=await bcrypt.hash(password,10)
+        console.log(hashedPassword)
+
+        const updateValue=await UserModel.updateOne({email},{$set:{password:hashedPassword}})
+        res.status(200).json({message:"password update "})
+
+    } catch (error) {
+        res.status(500).json({message:"Internal server error. please try again"})
+    }
+})
 
 app.listen(process.env.PORT,()=>{
     console.log(`http:localhost:${process.env.PORT}`)
