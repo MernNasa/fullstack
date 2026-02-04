@@ -4,6 +4,10 @@ const cors=require("cors")
 const bcrypt=require("bcrypt")
 const connectDB = require("./config/db")
 const { UserModel } = require("./models/user")
+const EmailService = require("./config/email")
+const { registerController, loginController, forgotpasswordController, deleteUserController, updateUserController, getAllUsersController, testController, getProfileController } = require("./controllers/userControllers")
+const authentication = require("./middleware/authmiddleware")
+
 
 
 const app=express()
@@ -21,82 +25,26 @@ connectDB()
 
 // apis
 
-app.get("/test",(req,res)=>{
-    res.status(200).json({message:"API status is healthy"})
-})
 
 
 //! fetch all users
 
-app.get("/allusers",async(req,res)=>{
-        try {
-           const allusers= await UserModel.find()
-           res.status(200).json({message:"Data fetched",data:allusers})
-            
-        } catch (error) {
-            res.status(500).json({message:"Internal server error. please try again"})
-        }
-})
+app.get("/allusers",getAllUsersController)
+
+//! get profile
+app.get("/profile",authentication,getProfileController)
 
 
 //! register
-app.post("/register",async (req,res) => {
-    try {
-        const {username,age,email,password,gender,education}=req.body
-        if(!username || !age || !email || !password || ! gender || !education){
-            res.status(404).json({message:"All fields are required"})
-        }
-
-        const hashedPassword=await bcrypt.hash(password,10)
-        console.log(hashedPassword)
-        const result=await UserModel.insertOne({username,age,email,password:hashedPassword,gender,education})
-        console.log(result)
-        res.status(201).json({message:"Register successfully",result})
-    } catch (error) {
-         res.status(500).json({message:"Internal server error. please try again"})
-    }
-})
-
-
+app.post("/register",registerController)
 //! login
-
-app.post("/login",async(req,res) => {
-    try {
-        const {email,password}=req.body
-        const user=await UserModel.findOne({email})
-        console.log(user)
-        if(!user){
-            res.status(404).json({message:"Email not found"})
-        }
-        const match= await bcrypt.compare   (password,user.password)
-        if(!match){
-            res.status(401).json({message:"Incorrect password"})
-        }
-        res.status(200).json({message:"Login successfully"})
-    } catch (error) {
-        res.status(500).json({message:"Internal server error. please try again"})
-    }
-})
-
+app.post("/login",loginController)
 //! forget the password
-app.post("/forgotpassword",async (req,res) => {
-    try {
-        const {email,password}=req.body
-        const user=await UserModel.findOne({email})
-        console.log(user)
-        if(!user){
-            res.status(404).json({message:"Email not found"})
-        }
-         const hashedPassword=await bcrypt.hash(password,10)
-        console.log(hashedPassword)
-
-        const updateValue=await UserModel.updateOne({email},{$set:{password:hashedPassword}})
-        res.status(200).json({message:"password update "})
-
-    } catch (error) {
-        res.status(500).json({message:"Internal server error. please try again"})
-    }
-})
+app.put("/forgotpassword",forgotpasswordController)
+//! delete user
+app.delete("/user/:id",deleteUserController)
+//! update user
+app.put("/update/:id",updateUserController)
 
 app.listen(process.env.PORT,()=>{
     console.log(`http:localhost:${process.env.PORT}`)
