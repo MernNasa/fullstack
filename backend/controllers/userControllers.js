@@ -4,8 +4,8 @@ const bcrypt=require("bcrypt")
 const EmailService = require("../config/email")
 const registerController=async (req,res) => {
     try {
-        const {username,age,email,password,gender,education}=req.body
-        if(!username || !age || !email || !password || ! gender || !education){
+        const {username,age,email,password,gender,education,role}=req.body
+        if(!username || !age || !email || !password || ! gender || !education || !role){
             res.status(404).json({message:"All fields are required"})
         }
 
@@ -15,7 +15,7 @@ const registerController=async (req,res) => {
         }
         const hashedPassword=await bcrypt.hash(password,10)
         console.log(hashedPassword)
-        const result=await UserModel.insertOne({username,age,email,password:hashedPassword,gender,education})
+        const result=await UserModel.insertOne({username,age,email,password:hashedPassword,gender,education,role})
         console.log(result)
         const message=`Hello ${username},
 
@@ -50,7 +50,7 @@ const loginController=async(req,res) => {
             res.status(401).json({message:"Incorrect password"})
         }
         // genereate a token
-        const jwttoken=jwt.sign({userId:user._id},process.env.JWT_SECRET_KEY,{expiresIn:"1h"})
+        const jwttoken=jwt.sign({userId:user._id,role:user.role},process.env.JWT_SECRET_KEY,{expiresIn:"1h"})
         res.status(200).json({message:"Login successfully",jwttoken})
     } catch (error) {
         console.log(error)

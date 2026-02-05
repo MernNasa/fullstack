@@ -1,15 +1,15 @@
 import React, { useEffect } from 'react'
 import axios from "axios"
+import Login from './pages/Login'
+import Profile from './pages/Profile'
 const App = () => {
-    const fdata=async () => {
-        const {data}=await axios.get("http://localhost:8080/allusers")
-        console.log(data)
-    }
-    useEffect(()=>{
-        fdata()
-    },[])
+    
   return (
-    <div>App</div>
+    <div>
+      <Login/>
+      <hr />
+      <Profile/>
+    </div>
   )
 }
 
